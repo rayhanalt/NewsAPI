@@ -6,10 +6,18 @@ use App\Http\Resources\DetailNewsResource;
 use App\Http\Resources\NewsResource;
 use App\Models\News;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+
 
 class NewsController extends Controller
 {
+    protected function role()
+    {
+        if (Auth::user()->role != 'admin') {
+            return response()->json(['message' => 'Anda bukan admin'], 403)->throwResponse();
+        }
+    }
     /**
      * Display a listing of the resource.
      *
@@ -17,13 +25,12 @@ class NewsController extends Controller
      */
     public function index()
     {
+
         // 3 news terakhir
         $news = News::latest()->take(3)->get();
         // 10 news lainnya
         $newsAll = News::latest()->skip(3)->take(10)->get();
-        // disatukan
-        $mergedEntries = $news->concat($newsAll);
-        return new NewsResource($mergedEntries);
+        return new NewsResource(['latest' => $news, 'others' => $newsAll]);
     }
 
     /**
@@ -44,7 +51,7 @@ class NewsController extends Controller
      */
     public function store(Request $request)
     {
-
+        $this->role();
         $validatedData = $request->validate([
             'title' => 'required',
             'content' => 'required',
@@ -84,8 +91,8 @@ class NewsController extends Controller
     public function edit(News $news)
     {
 
-        $editNews = News::where('id', $news->id)->get();
-        return NewsResource::collection($editNews);
+        // $editNews = News::where('id', $news->id)->get();
+        // return NewsResource::collection($editNews);
     }
 
     /**
@@ -97,7 +104,8 @@ class NewsController extends Controller
      */
     public function update(Request $request, News $news)
     {
-        // dd(json_encode($request->all()));
+        $this->role();
+
         $validatedData = $request->validate([
             'title' => 'required',
             'content' => 'required',
@@ -132,8 +140,9 @@ class NewsController extends Controller
      */
     public function destroy(News $news)
     {
+        $this->role();
         File::delete(public_path('images/' . $news->image));
         $news->delete();
-        return response()->json(['message' => 'News Deleted successfully.'], 200);
+        return response()->json(['message' => 'News Deleted successfully.', 'deleted data' => new DetailNewsResource($news)], 200);
     }
 }
