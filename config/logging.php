@@ -51,6 +51,14 @@ return [
     */
 
     'channels' => [
+        'database' => [
+            'driver' => 'database',
+            'table' => 'logs', // Nama tabel log di database
+            'connection' => null, // Koneksi database yang digunakan, null untuk menggunakan koneksi default
+            'queue' => false, // Menyimpan log dalam antrian (opsional)
+            'tap' => [App\Logging\LogDatabaseChannel::class], // Tap khusus untuk memanipulasi log sebelum disimpan (opsional)
+            'level' => 'debug', // Level log yang ingin disimpan
+        ],
         'stack' => [
             'driver' => 'stack',
             'channels' => ['single'],
@@ -85,7 +93,7 @@ return [
             'handler_with' => [
                 'host' => env('PAPERTRAIL_URL'),
                 'port' => env('PAPERTRAIL_PORT'),
-                'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
+                'connectionString' => 'tls://' . env('PAPERTRAIL_URL') . ':' . env('PAPERTRAIL_PORT'),
             ],
         ],
 

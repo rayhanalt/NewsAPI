@@ -2,12 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\DetailNewsResource;
-use App\Http\Resources\NewsResource;
 use App\Models\News;
+use App\Models\Comments;
+use App\Events\NewsCreated;
+use App\Events\NewsDeleted;
+use App\Events\NewsUpdated;
 use Illuminate\Http\Request;
+use App\Http\Resources\NewsResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Event;
+use App\Http\Resources\DetailNewsResource;
+use App\Http\Resources\DetailCommentsResource;
 
 
 class NewsController extends Controller
@@ -18,6 +24,7 @@ class NewsController extends Controller
             return response()->json(['message' => 'Anda bukan admin'], 403)->throwResponse();
         }
     }
+
     /**
      * Display a listing of the resource.
      *
@@ -25,12 +32,8 @@ class NewsController extends Controller
      */
     public function index()
     {
-
-        // 3 news terakhir
-        $news = News::latest()->take(3)->get();
-        // 10 news lainnya
-        $newsAll = News::latest()->skip(3)->take(10)->get();
-        return new NewsResource(['latest' => $news, 'others' => $newsAll]);
+        $news = News::latest()->paginate(5);
+        return new NewsResource($news);
     }
 
     /**
@@ -51,6 +54,7 @@ class NewsController extends Controller
      */
     public function store(Request $request)
     {
+
         $this->role();
         $validatedData = $request->validate([
             'title' => 'required',
@@ -66,9 +70,10 @@ class NewsController extends Controller
         $validatedData['image']->move(public_path('images'), $fileName);
         $validatedData['image'] = $fileName;
 
-        $createNews = News::create($validatedData);
+        $news = News::create($validatedData);
+        event(new NewsCreated($news));
 
-        return response()->json(['message' => 'News created successfully.', 'data' => new NewsResource($createNews)], 201);
+        return response()->json(['message' => 'News created successfully.', 'data' => new NewsResource($news)], 201);
     }
 
     /**
@@ -79,7 +84,9 @@ class NewsController extends Controller
      */
     public function show(News $news)
     {
-        //
+        $commentInfo = Comments::with('hasUser', 'hasNews')->where('news_id', $news->id)->latest()->get();
+
+        return response()->json(['message' => 'Detail News.', 'News Info' => new DetailNewsResource($news), 'Comments' => DetailCommentsResource::collection($commentInfo)], 200);
     }
 
     /**
@@ -104,6 +111,7 @@ class NewsController extends Controller
      */
     public function update(Request $request, News $news)
     {
+
         $this->role();
 
         $validatedData = $request->validate([
@@ -128,8 +136,8 @@ class NewsController extends Controller
         }
 
         $news->update($validatedData);
-
-        return response()->json(['message' => 'News Updated successfully.', 'data' => new DetailNewsResource($news)], 200);
+        event(new NewsUpdated($news));
+        return response()->json(['message' => 'News Updated successfully.', 'data' => new NewsResource($news)], 200);
     }
 
     /**
@@ -142,6 +150,7 @@ class NewsController extends Controller
     {
         $this->role();
         File::delete(public_path('images/' . $news->image));
+        event(new NewsDeleted($news));
         $news->delete();
         return response()->json(['message' => 'News Deleted successfully.', 'deleted data' => new DetailNewsResource($news)], 200);
     }

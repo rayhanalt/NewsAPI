@@ -12,7 +12,7 @@ class News extends Model
     protected $guarded = ['id'];
     protected $fillable = ['title', 'content', 'image'];
 
-    public function comments()
+    public function haveComments()
     {
         return $this->hasMany(Comment::class);
     }
