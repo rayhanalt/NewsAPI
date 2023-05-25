@@ -13,7 +13,7 @@
 2. buka terminal didalam folder terkait jalankan perintah ( composer install dan npm install(opsional))
 3. ubah file .env.example menjadi .env
 4. jalankan perintah php artisan cache:clear dan php artisan config:clear
-5. jalankan perintah php artisan config:clear
+5. jalankan perintah ```php artisan config:clear```
 6. jalankan perintah php artisan key:generate
 7. jalankan perintah php artisan migrate
 8. buka link ini dan create fork ke dalam akun postman anda ( https://www.postman.com/supply-technologist-62151988/workspace/news/collection/27545872-7b76da45-bb57-45ed-ba6a-4b0f89603449?action=share&creator=27545872 )
